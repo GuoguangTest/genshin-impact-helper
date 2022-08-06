@@ -36,7 +36,7 @@ class Base(object):
         header = {
             'User-Agent': CONFIG.USER_AGENT,
             'Referer': CONFIG.REFERER_URL,
-            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Encoding': 'gzip, deflate',
             'Cookie': self._cookie
         }
         return header
@@ -56,6 +56,7 @@ class Roles(Base):
         try:
             content = requests.Session().get(
                 CONFIG.AWARD_URL, headers=self.get_header()).text
+            log.debug(content)
             response = self.to_python(content)
         except json.JSONDecodeError as e:
             log.error(e)
@@ -71,6 +72,7 @@ class Roles(Base):
             try:
                 content = requests.Session().get(
                     CONFIG.ROLE_URL, headers=self.get_header()).text
+                log.debug(content)
                 response = self.to_python(content)
             except HTTPError as error:
                 log.error(
@@ -109,8 +111,8 @@ class Sign(Base):
 
     @staticmethod
     def get_ds():
-        # v2.3.0-web @povsister & @journey-ad
-        n = 'h8w582wxwgqvahcdkpvdhbh2w9casgfl'
+        # v2.34.1 
+        n = '9nQiU3AV0rJSIBWgdynfoGMGKaklfbM7'
         i = str(int(time.time()))
         r = ''.join(random.sample(string.ascii_lowercase + string.digits, 6))
         c = hexdigest('salt=' + n + '&t=' + i + '&r=' + r)
@@ -119,14 +121,13 @@ class Sign(Base):
     def get_header(self):
         header = super(Sign, self).get_header()
         header.update({
-            'x-rpc-device_id':str(uuid.uuid3(
-                uuid.NAMESPACE_URL, self._cookie)).replace('-', '').upper(),
+            'X-Rpc-Device_id':str(uuid.uuid3(uuid.NAMESPACE_URL, self._cookie)),
             # 1:  ios
             # 2:  android
             # 4:  pc web
             # 5:  mobile web
-            'x-rpc-client_type': '5',
-            'x-rpc-app_version': CONFIG.APP_VERSION,
+            'X-Rpc-Client_type': '5',
+            'X-Rpc-App_version': CONFIG.APP_VERSION,
             'DS': self.get_ds(),
         })
         return header
@@ -155,6 +156,7 @@ class Sign(Base):
             try:
                 content = requests.Session().get(
                     info_url, headers=self.get_header()).text
+                log.debug(content)
                 info_list.append(self.to_python(content))
             except Exception as e:
                 raise Exception(e)
@@ -176,7 +178,7 @@ class Sign(Base):
 
             log.info(f'准备为旅行者 {i + 1} 号签到...')
             time.sleep(10)
-            messgae = {
+            message = {
                 'today': today,
                 'region_name': self._region_name_list[i],
                 'uid': uid,
@@ -186,14 +188,14 @@ class Sign(Base):
                 'end': '',
             }
             if info_list[i]['data']['is_sign'] is True:
-                messgae['award_name'] = awards[total_sign_day - 1]['name']
-                messgae['award_cnt'] = awards[total_sign_day - 1]['cnt']
-                messgae['status'] = f'👀 旅行者 {i + 1} 号, 你已经签到过了哦'
-                message_list.append(self.message.format(**messgae))
+                message['award_name'] = awards[total_sign_day - 1]['name']
+                message['award_cnt'] = awards[total_sign_day - 1]['cnt']
+                message['status'] = f'👀 旅行者 {i + 1} 号, 你已经签到过了哦'
+                message_list.append(self.message.format(**message))
                 continue
             if info_list[i]['data']['first_bind'] is True:
-                messgae['status'] = f'💪 旅行者 {i + 1} 号, 请先前往米游社App手动签到一次'
-                message_list.append(self.message.format(**messgae))
+                message['status'] = f'💪 旅行者 {i + 1} 号, 请先前往米游社App手动签到一次'
+                message_list.append(self.message.format(**message))
                 continue
 
             data = {
@@ -207,28 +209,29 @@ class Sign(Base):
                     CONFIG.SIGN_URL,
                     headers=self.get_header(),
                     data=json.dumps(data, ensure_ascii=False)).text
+                log.debug(content)
                 response = self.to_python(content)
             except Exception as e:
                 raise Exception(e)
             code = response.get('retcode', 99999)
             # 0:      success
             # -5003:  already signed in
-            if code != 0:
-                message_list.append(response)
-                continue
-            messgae['total_sign_day'] = total_sign_day + 1
-            messgae['status'] = response['message']
-            message_list.append(self.message.format(**messgae))
+            if code != 0 and code != -5003:
+                raise(Exception(content))
+            message['total_sign_day'] = total_sign_day + 1
+            message['status'] = response['message']
+            message_list.append(self.message.format(**message))
         log.info('签到完毕')
 
         return ''.join(message_list)
 
     @property
     def message(self):
-        return CONFIG.MESSGAE_TEMPLATE
+        return CONFIG.MESSAGE_TEMPLATE
 
 
 if __name__ == '__main__':
+    log.debug("WARNING: debug mode enabled!")
     log.info('任务开始')
     notify = Notify()
     msg_list = []
