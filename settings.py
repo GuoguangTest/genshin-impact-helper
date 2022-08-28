@@ -18,7 +18,7 @@ class _Config:
     ROLE_URL = 'https://api-takumi.mihoyo.com/binding/api/getUserGameRolesByCookie?game_biz={}'.format('hk4e_cn')
     INFO_URL = 'https://api-takumi.mihoyo.com/event/bbs_sign_reward/info?region={}&act_id={}&uid={}'
     SIGN_URL = 'https://api-takumi.mihoyo.com/event/bbs_sign_reward/sign'
-    USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) ' \
+    USER_AGENT = 'Mozilla/5.0 (Linux; U; Android 12; zh-cn; Mi 10 Build/SKQ1.211006.001) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/89.0.4389.116 Mobile Safari/537.36 ' \
                  'miHoYoBBS/{}'.format(APP_VERSION)
 
 
